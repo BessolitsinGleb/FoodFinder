@@ -1,0 +1,26 @@
+# Caddy сам получает и продлевает HTTPS-сертификат Let's Encrypt для {$DOMAIN}.
+# Без своего домена подойдёт адрес вида 203-0-113-10.sslip.io (указывает на IP сервера).
+{$DOMAIN} {
+	encode gzip
+
+	# API и документация — в бэкенд; X-Forwarded-For Caddy проставляет сам
+	handle /api/* {
+		reverse_proxy backend:8000
+	}
+	handle /docs* {
+		reverse_proxy backend:8000
+	}
+	handle /openapi.json {
+		reverse_proxy backend:8000
+	}
+
+	# Всё остальное — статика фронта (nginx)
+	handle {
+		reverse_proxy frontend:8080
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+}

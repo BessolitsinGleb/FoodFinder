@@ -75,7 +75,27 @@ docker compose down              # остановить (данные БД ос�
 ```
 
 Postgres и Redis поднимаются в контейнерах, ключи берутся из `.env`.
-Деплой на Railway — в [backend/README.md](backend/README.md#деплой-на-railway).
+
+## Деплой на VPS
+
+Прод — `docker-compose.prod.yml`: Caddy (HTTPS с автоматическим сертификатом) отдаёт `/api/*`
+бэкенду, остальное — фронту; Postgres и Redis наружу не открыты.
+
+```bash
+# один раз на чистом Ubuntu (от root)
+git clone https://github.com/BessolitsinGleb/FoodFinder.git /opt/foodfinder
+sh /opt/foodfinder/deploy/setup-server.sh        # Docker, firewall, вход только по ключу, swap
+
+# .env на сервере (не в git): ключи + DOMAIN и POSTGRES_PASSWORD
+cd /opt/foodfinder && docker compose -f docker-compose.prod.yml up -d --build
+
+# обновление после пуша в GitHub
+sh /opt/foodfinder/deploy/deploy.sh
+```
+
+Своего домена нет — подойдёт `DOMAIN=<ip-через-дефисы>.sslip.io`, например `203-0-113-10.sslip.io`:
+он указывает на IP сервера, и Caddy получит для него настоящий сертификат.
+Railway — в [backend/README.md](backend/README.md#деплой-на-railway).
 
 Для локальной разработки без почты можно включить `SMTP__DEV_LOG_CODES=true` —
 код подтверждения появится в логе бэкенда.

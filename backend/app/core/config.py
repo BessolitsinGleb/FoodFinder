@@ -125,8 +125,20 @@ class AuthSettings(BaseModel):
     unverified_ttl_hours: int = 24
 
 class MailSettings(BaseModel):
-    """SMTP для писем с кодом подтверждения."""
+    """Отправка писем с кодом подтверждения.
 
+    smtp  — обычный SMTP (VPS, локально);
+    gmail — Gmail API по HTTPS (хостинги, где SMTP закрыт, например бесплатный Render);
+    brevo — HTTP API Brevo.
+    """
+
+    provider: Literal["smtp", "gmail", "brevo"] = "smtp"
+    brevo_api_key: SecretStr = SecretStr("")
+    # Gmail API: OAuth-клиент из Google Cloud и refresh-токен (его пишет scripts/gmail_auth.py)
+    gmail_client_id: str = ""
+    gmail_client_secret: SecretStr = SecretStr("")
+    gmail_refresh_token: SecretStr = SecretStr("")
+    from_name: str = "FoodFinder"
     host: str = ""
     port: int = 587
     user: str = ""
@@ -141,6 +153,10 @@ class MailSettings(BaseModel):
 
     @property
     def is_configured(self) -> bool:
+        if self.provider == "brevo":
+            return bool(self.brevo_api_key.get_secret_value() and self.from_address)
+        if self.provider == "gmail":
+            return bool(self.gmail_client_id and self.gmail_refresh_token.get_secret_value())
         return bool(self.host and self.from_address)
 
 class RedisSettings(BaseModel):

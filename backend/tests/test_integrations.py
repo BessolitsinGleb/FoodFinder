@@ -81,3 +81,79 @@ def test_bad_header_values_are_ignored():
     llm = LLMClient(LLMSettings(api_key="test", app_url="https://foodfinder.ru", app_title="FoodFinder"))
     assert llm._client.default_headers["HTTP-Referer"] == "https://foodfinder.ru"
     assert llm._client.default_headers["X-Title"] == "FoodFinder"
+
+
+def test_brevo_mailer_sends_code_over_http():
+    from app.core.config import MailSettings
+    from app.integrations.mailer import Mailer
+
+    sent = []
+
+    def handler(request):
+        sent.append(request)
+        return httpx2.Response(201, json={"messageId": "<1@brevo>"})
+
+    settings = MailSettings(provider="brevo", brevo_api_key="xkeysib-test", from_address="me@yandex.ru")
+    asyncio.run(Mailer(settings, transport=httpx2.MockTransport(handler)).send_verification_code("u@test.ru", "123456"))
+
+    request = sent[0]
+    body = json.loads(request.content)
+    assert str(request.url) == "https://api.brevo.com/v3/smtp/email"
+    assert request.headers["api-key"] == "xkeysib-test"
+    assert body["to"] == [{"email": "u@test.ru"}] and body["sender"]["email"] == "me@yandex.ru"
+    assert "123456" in body["textContent"]
+
+
+def test_brevo_errors_and_missing_key():
+    from app.core.config import MailSettings
+    from app.core.exceptions import ServiceUnavailableError
+    from app.integrations.mailer import Mailer
+
+    failing = httpx2.MockTransport(lambda r: httpx2.Response(400, json={"code": "invalid_parameter", "message": "sender not valid"}))
+    settings = MailSettings(provider="brevo", brevo_api_key="xkeysib-test", from_address="me@yandex.ru")
+    with pytest.raises(ExternalServiceError):
+        asyncio.run(Mailer(settings, transport=failing).send_verification_code("u@test.ru", "123456"))
+    # Без ключа — 503 "не настроено", а не попытка отправки
+    with pytest.raises(ServiceUnavailableError):
+        asyncio.run(Mailer(MailSettings(provider="brevo", from_address="me@yandex.ru")).send_verification_code("u@test.ru", "1"))
+
+
+def test_gmail_mailer_refreshes_token_and_sends():
+    """Gmail API по HTTPS — для хостингов с закрытым SMTP (бесплатный Render)."""
+    import base64
+    from email import message_from_bytes
+    from app.core.config import MailSettings
+    from app.integrations.mailer import Mailer
+
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        if request.url.host == "oauth2.googleapis.com":
+            return httpx2.Response(200, json={"access_token": "ya29.test", "expires_in": 3599})
+        assert request.headers["Authorization"] == "Bearer ya29.test"
+        return httpx2.Response(200, json={"id": "msg-1"})
+
+    settings = MailSettings(provider="gmail", gmail_client_id="cid", gmail_client_secret="csecret",
+                            gmail_refresh_token="1//refresh")
+    mailer = Mailer(settings, transport=httpx2.MockTransport(handler))
+    asyncio.run(mailer.send_verification_code("u@test.ru", "654321"))
+    asyncio.run(mailer.send_verification_code("v@test.ru", "111111"))
+
+    token_calls = [c for c in calls if c.url.host == "oauth2.googleapis.com"]
+    send_calls = [c for c in calls if c.url.host == "gmail.googleapis.com"]
+    assert len(token_calls) == 1  # access-токен закэширован между письмами
+    assert b"grant_type=refresh_token" in token_calls[0].content
+    raw = json.loads(send_calls[0].content)["raw"]
+    message = message_from_bytes(base64.urlsafe_b64decode(raw))
+    assert message["To"] == "u@test.ru" and "654321" in message.get_payload(decode=True).decode()
+
+
+def test_gmail_revoked_token_gives_clear_error():
+    from app.core.config import MailSettings
+    from app.integrations.mailer import Mailer
+
+    revoked = httpx2.MockTransport(lambda r: httpx2.Response(400, json={"error": "invalid_grant"}))
+    settings = MailSettings(provider="gmail", gmail_client_id="cid", gmail_client_secret="s", gmail_refresh_token="t")
+    with pytest.raises(ExternalServiceError):
+        asyncio.run(Mailer(settings, transport=revoked).send_verification_code("u@test.ru", "1"))

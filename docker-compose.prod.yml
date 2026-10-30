@@ -1,0 +1,85 @@
+# Прод на VPS:  docker compose -f docker-compose.prod.yml up -d --build
+#
+# Снаружи открыт только Caddy (80/443): он сам получает HTTPS-сертификат и раздаёт
+# /api/* -> бэкенд, остальное -> фронт. Всё на одном адресе, поэтому CORS не нужен.
+# Postgres и Redis доступны только внутри docker-сети.
+#
+# Все секреты и настройки — в .env рядом с этим файлом (на сервере, не в git):
+#   DOMAIN, POSTGRES_PASSWORD, AUTH__SECRET_KEY, LLM__API_KEY, WEB__API_KEY, SMTP__*
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: food
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?задайте POSTGRES_PASSWORD в .env}
+      POSTGRES_DB: food_suppliers
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U food -d food_suppliers"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # Только лимиты запросов и история чата (она и так живёт час) — на диск не пишем
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "64mb", "--maxmemory-policy", "allkeys-lru"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DB__HOST: postgres
+      DB__PORT: "5432"
+      DB__USER: food
+      DB__PASSWORD: ${POSTGRES_PASSWORD}
+      DB__NAME: food_suppliers
+      REDIS__URL: redis://redis:6379/0
+      APP__ENV: prod
+      APP__DEBUG: "false"
+      APP__CORS_ORIGINS: '["https://${DOMAIN}"]'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    environment:
+      # Тот же адрес, что и сайт: Caddy отправит /api/* в бэкенд
+      API_BASE: /api/v1
+    depends_on:
+      - backend
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?задайте DOMAIN в .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+      - frontend
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
