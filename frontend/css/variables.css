@@ -1,0 +1,93 @@
+/* Дизайн-токены. Светлая тема — по умолчанию, тёмная — [data-theme="dark"] на <html>. */
+
+:root {
+  --font-heading: "Nunito", "Manrope", system-ui, sans-serif;
+  --font-body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Тёплый кремовый фон + глубокий зелёно-бирюзовый: спокойно и надёжно */
+  --bg: #f7f4ee;
+  --bg-soft: #efebe3;
+  --surface: #ffffff;
+  --surface-2: #fbf9f5;
+  --border: #e6e0d6;
+  --border-strong: #d6cec1;
+
+  --text: #1e2a2b;
+  --text-muted: #5e6b6b;
+  --text-faint: #8a9593;
+
+  --primary: #2e7d6b;
+  --primary-hover: #276b5c;
+  --primary-soft: #e1f0eb;
+  --on-primary: #ffffff;
+
+  /* Морковный акцент — цвет маскота */
+  --accent: #f08a3c;
+  --accent-hover: #e2772a;
+  --accent-soft: #fdebdd;
+  --on-accent: #ffffff;
+
+  --success: #2f8f5b;
+  --success-soft: #e2f3e9;
+  --warning: #b97b0c;
+  --warning-soft: #fbf1db;
+  --danger: #c8483d;
+  --danger-soft: #fbe5e2;
+  --info: #3b6ea8;
+  --info-soft: #e4edf8;
+
+  --radius-sm: 10px;
+  --radius: 18px;
+  --radius-lg: 28px;
+  --radius-pill: 999px;
+
+  --shadow-sm: 0 1px 2px rgba(30, 42, 43, 0.06), 0 2px 6px rgba(30, 42, 43, 0.04);
+  --shadow: 0 4px 14px rgba(30, 42, 43, 0.07), 0 1px 3px rgba(30, 42, 43, 0.05);
+  --shadow-lg: 0 18px 40px rgba(30, 42, 43, 0.12), 0 4px 10px rgba(30, 42, 43, 0.06);
+  --ring: 0 0 0 4px rgba(46, 125, 107, 0.22);
+
+  --container: 1120px;
+  --header-h: 68px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --bg: #0f1615;
+  --bg-soft: #131c1a;
+  --surface: #17211f;
+  --surface-2: #1c2826;
+  --border: #283632;
+  --border-strong: #35463f;
+
+  --text: #e7efec;
+  --text-muted: #a0b1ab;
+  --text-faint: #75877f;
+
+  --primary: #5cc2a6;
+  --primary-hover: #77d0b7;
+  --primary-soft: #1c3a32;
+  --on-primary: #0b1412;
+
+  --accent: #f7a35c;
+  --accent-hover: #f9b577;
+  --accent-soft: #3a2a1c;
+  --on-accent: #1a0f05;
+
+  --success: #5cc98c;
+  --success-soft: #19332a;
+  --warning: #e7b04a;
+  --warning-soft: #372d17;
+  --danger: #f07c70;
+  --danger-soft: #3d211e;
+  --info: #84b2e8;
+  --info-soft: #1c2a3b;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 20px 44px rgba(0, 0, 0, 0.5);
+  --ring: 0 0 0 4px rgba(92, 194, 166, 0.28);
+
+  color-scheme: dark;
+}

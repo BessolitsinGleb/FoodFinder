@@ -1,0 +1,28 @@
+# Web
+fastapi==0.162.0
+uvicorn[standard]==0.54.0
+
+# Validation & settings
+pydantic==2.14.2
+pydantic-settings==2.16.2
+email-validator==2.3.0
+
+# Database
+sqlalchemy[asyncio]==2.1.6
+asyncpg==0.32.0
+alembic==1.20.1
+
+# LLM (OpenRouter — OpenAI-совместимый API)
+openai==3.41.0
+
+# HTTP-клиент для Tavily (тот же, что использует openai)
+httpx2==2.16.0
+
+# Redis: ограничитель запросов и память диалога
+redis==8.1.0
+
+# Авторизация: JWT, хэши паролей (argon2), OAuth2-форма логина, письма с кодом
+PyJWT==2.15.1
+pwdlib[argon2]==0.3.1
+python-multipart==0.0.32
+aiosmtplib==5.1.3

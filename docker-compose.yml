@@ -1,0 +1,64 @@
+# Локальный запуск всего стека в Docker:  docker compose up --build
+# Сайт — http://localhost:8080, API — http://localhost:8000/docs
+#
+# Ключи (LLM, Tavily, SMTP, AUTH__SECRET_KEY) берутся из .env,
+# адреса БД и Redis переопределены ниже на контейнеры.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: food
+      POSTGRES_PASSWORD: food
+      POSTGRES_DB: food_suppliers
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U food -d food_suppliers"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build: ./backend
+    image: foodfinder-backend
+    env_file: .env
+    environment:
+      DB__HOST: postgres
+      DB__PORT: "5432"
+      DB__USER: food
+      DB__PASSWORD: food
+      DB__NAME: food_suppliers
+      REDIS__URL: redis://redis:6379/0
+      APP__ENV: prod
+      APP__DEBUG: "false"
+      APP__CORS_ORIGINS: '["http://localhost:8080","http://127.0.0.1:8080"]'
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    image: foodfinder-frontend
+    environment:
+      API_BASE: http://localhost:8000/api/v1
+    ports:
+      - "8080:8080"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:

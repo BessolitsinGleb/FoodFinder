@@ -1,0 +1,46 @@
+/* Анимации маскота. Всё мягкое и медленное — не отвлекает от работы. */
+
+.mascot { overflow: visible; }
+.mascot .m-body {
+  transform-origin: 60px 146px;
+  animation: m-bob 3.6s ease-in-out infinite;
+}
+.mascot .m-leaves {
+  transform-origin: 60px 38px;
+  animation: m-sway 4.2s ease-in-out infinite;
+}
+.mascot .m-eyes {
+  transform-origin: 60px 70px;
+  transform-box: view-box;
+  animation: m-blink 5s infinite;
+}
+.mascot .m-wave {
+  transform-origin: 89px 88px;
+  animation: m-wave 1.6s ease-in-out infinite;
+}
+.mascot-thinking .m-body { animation: m-think 1.8s ease-in-out infinite; }
+
+/* Маскот без анимации (мелкий, в логотипе) */
+.mascot.still .m-body,
+.mascot.still .m-leaves { animation: none; }
+
+@keyframes m-bob {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-3px) rotate(-1.5deg); }
+}
+@keyframes m-sway {
+  0%, 100% { transform: rotate(-4deg); }
+  50% { transform: rotate(5deg); }
+}
+@keyframes m-blink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.1); }
+}
+@keyframes m-wave {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-22deg); }
+}
+@keyframes m-think {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg) translateY(-2px); }
+}

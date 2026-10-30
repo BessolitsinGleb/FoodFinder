@@ -1,0 +1,36 @@
+server {
+    listen ${PORT};
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+    server_tokens off;
+
+    # Заголовки безопасности. CSP: скрипты только свои, шрифты — Google Fonts,
+    # запросы — к своему домену и к API по https (или localhost при локальном запуске).
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https: http://localhost:8000 http://127.0.0.1:8000; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    # HTML и env.js не кэшируем — после деплоя сразу подхватится новое
+    location ~* \.html$ {
+        add_header Cache-Control "no-cache" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https: http://localhost:8000 http://127.0.0.1:8000; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+    }
+    location = /js/env.js {
+        add_header Cache-Control "no-cache" always;
+    }
+
+    location ~* \.(css|js|svg)$ {
+        add_header Cache-Control "public, max-age=3600" always;
+    }
+
+    gzip on;
+    gzip_types text/css application/javascript image/svg+xml;
+}
